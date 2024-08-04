@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "testcontainers-salt"
+version = "0.1.0"
+description = ""
+authors = ["Nikolas Papaioannou <nikolas@hacky.software>"]
+readme = "README.md"
+
+[tool.poetyr.include]
+include = ["resources"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+testcontainers = "^4.7.2"
+testinfra = "^6.0.0"
+pyyaml = "^6.0.1"
+black = "^24.8.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

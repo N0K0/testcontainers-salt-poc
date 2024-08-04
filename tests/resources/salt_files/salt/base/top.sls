@@ -1,0 +1,3 @@
+base:
+  '*':
+    - state_test
