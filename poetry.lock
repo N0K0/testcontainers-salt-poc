@@ -499,26 +499,6 @@ trino = ["trino"]
 weaviate = ["weaviate-client (>=4.5.4,<5.0.0)"]
 
 [[package]]
-name = "testinfra"
-version = "6.0.0"
-description = "Test infrastructures"
-optional = false
-python-versions = ">=3.5"
-files = [
-    {file = "testinfra-6.0.0-py3-none-any.whl", hash = "sha256:1a75b5025dbe82ffedec50afeaf9a7f96a8cd1e294f0d40de3a089a369ceae0e"},
-    {file = "testinfra-6.0.0.tar.gz", hash = "sha256:4225d36e4bb02eb1618429325280c4b62a18cea8a90c91564ee0cc1d31ca331a"},
-]
-
-[package.dependencies]
-pytest-testinfra = "*"
-
-[package.extras]
-ansible = ["pytest-testinfra[ansible]"]
-paramiko = ["pytest-testinfra[paramiko]"]
-salt = ["pytest-testinfra[salt]"]
-winrm = ["pytest-testinfra[pywinrm]"]
-
-[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -639,4 +619,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "61b85ec07cfc3f5666450c3f5070c62a175d055326b85a05ab369f4247ab1989"
+content-hash = "22495b417f0a8437d10268b3409854222582926dd34e5eaf9fd3266397611535"

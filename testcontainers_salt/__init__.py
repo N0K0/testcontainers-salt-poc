@@ -42,9 +42,6 @@ class SaltImage(DockerImage):
 
 
 class SaltContainer(DockerContainer):
-    """A container for running salt-master and salt-minion."""
-    """
-    """
     def __init__(self, salt_version: str, **kwargs):
 
         self.config_dir = Path("/etc/salt")
