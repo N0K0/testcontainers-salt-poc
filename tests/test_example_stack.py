@@ -1,10 +1,9 @@
-import contextlib
-from importlib import resources
 from pathlib import Path
 
 import pytest
 
 from testcontainers_salt import SaltContainer
+import testinfra
 
 @pytest.fixture(scope="module")
 def container_fixture():
@@ -45,7 +44,18 @@ def container_fixture():
 
     yield container
     container.stop()
+@pytest.fixture(scope="module")
+def host(container_fixture: SaltContainer):
+    conatiner_id = container_fixture.get_wrapped_container().id
+    return testinfra.get_host(f"docker://{conatiner_id}")
 
 def test_container(container_fixture):
     result = container_fixture.exec(["cat", "/etc/salt/minion"])
     print(result)
+
+def test_passwd(host):
+    passwd = host.file("/etc/passwd")
+    assert passwd.contains("root")
+    assert passwd.user == "root"
+    assert passwd.group == "root"
+    assert passwd.mode == 0o644
