@@ -27,22 +27,34 @@ def represent_dict_with_skip_none(dumper, data):
 yaml.add_representer(dict, represent_dict_with_skip_none)
 yaml.add_representer(defaultdict, represent_dict_with_skip_none)
 
-
 # Make "env" a type alias for str
 env = str
 
 
-class SaltImage(DockerImage):
-    def __init__(self, salt_version: str, **kwargs):
-        dockerfile = resources.files("testcontainers_salt") / "resources" / "Dockerfile"
+class SaltImageDocker(DockerImage):
+    def __init__(self, salt_version: str = "3007", **kwargs):
+        self.salt_version = salt_version
+        dockerfile = (
+            resources.files("testcontainers_salt") / "resources" / "Dockerfile.ubuntu"
+        )
         # Pass the salt version as a build arg
-        super().__init__(
-            ".", dockerfile_path=str(dockerfile), **kwargs
+        super().__init__(".", dockerfile_path=str(dockerfile), **kwargs)
+
+    def build(self, **kwargs):
+        super().build(
+            buildargs={
+                "SALT_VERSION": self.salt_version,
+            },
+            **kwargs,
         )
 
 
+SaltImage = SaltImageDocker
+
+
 class SaltContainer(DockerContainer):
-    def __init__(self, salt_version: str, **kwargs):
+    def __init__(self, image=None, **kwargs):
+        self._id = None
 
         self.config_dir = Path("/etc/salt")
         self.base_dir_state = Path("/srv/salt")
@@ -68,14 +80,14 @@ class SaltContainer(DockerContainer):
         self.state_verbose: bool = False
 
         self.config_file: dict = {}
-        self.extra_config_file: dict = {}
+        self.extra_config_data: dict = {}
 
-        image = SaltImage(salt_version, **kwargs)
-        image.build(
-            buildargs={
-                "SALT_VERSION": salt_version,
-            }
-        )
+        self._complete_config: dict = {}
+
+        if image is None:
+            image = SaltImage(**kwargs)
+            image.build()
+
         super().__init__(str(image), **kwargs)
 
     def _configure(self) -> None:
@@ -85,7 +97,7 @@ class SaltContainer(DockerContainer):
 
         config_file_path = config_dir / "minion"
 
-        self.config_file["id"] = None
+        self.config_file["id"] = self._id
         self.config_file["state_top"] = self.state_top
         self.config_file["state_top_saltenv"] = self.state_top_saltenv
         self.config_file["file_roots"] = self.file_roots
@@ -94,11 +106,11 @@ class SaltContainer(DockerContainer):
         self.config_file["gitfs_remotes"] = self.gitfs_remotes
         self.config_file["state_verbose"] = self.state_verbose
 
-        complete_config = self.config_file | self.extra_config_file
+        self._complete_config = self.config_file | self.extra_config_data
 
         with open(config_file_path, "w") as f:
             # Dump to YAML, but only with basic
-            output = yaml.dump(complete_config, default_flow_style=False)
+            output = yaml.dump(self._complete_config, default_flow_style=False)
             log.debug(output)
             f.write(output)
 
@@ -136,6 +148,10 @@ class SaltContainer(DockerContainer):
                     str(host_path), str(self.base_dir_pillar / environ / target_path)
                 )
 
+    def with_id(self, id: str) -> Self:
+        self._id = id
+        return self
+
     def with_file_root(
         self,
         host_path: str | PathLike | Traversable,
@@ -168,10 +184,6 @@ class SaltContainer(DockerContainer):
         self._pillar_root_volume_mappings[environ].append((host_path, target_path))
         return self
 
-    def with_id(self, id: str) -> Self:
-        self.config_file["id"] = id
-        return self
-
     def with_config_file(self, path: str | PathLike) -> Self:
         self.config_file = yaml.safe_load(open(path))
         return self
@@ -197,7 +209,7 @@ class SaltContainer(DockerContainer):
         return self
 
     def with_extra_config(self, config: dict) -> Self:
-        self.extra_config_file = config
+        self.extra_config_data = config
         return self
 
     def get_salt_call_args(self, command: str = "state.apply") -> list[str]:
@@ -205,11 +217,9 @@ class SaltContainer(DockerContainer):
             "salt-call",
             "--local",
             f"--config-dir={self.config_dir}",
-            f"--id={self.config_file['id']}",
+            f"--id={self._id}",
             f"{command}",
         ]
 
     def exec_salt_call(self, command: str = "state.apply") -> tuple[int, bytes]:
         return self.exec(self.get_salt_call_args(command))
-
-

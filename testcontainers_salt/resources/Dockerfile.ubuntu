@@ -1,8 +1,10 @@
-FROM ubuntu:22.04
+ARG UBUNTU_VERSION=24.04
+FROM ubuntu:${UBUNTU_VERSION}
 
-ARG SALT_VERSION
+USER root
+
+ARG SALT_VERSION=3007
 # Crash if the version is not set
-RUN test -n "${SALT_VERSION}"
 
 LABEL org.opencontainers.image.authors="n0k0@hacky.software"
 LABEL org.opencontainers.image.version="${SALT_VERSION}"
@@ -17,7 +19,7 @@ RUN curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023.gpg https://repo.s
 
 RUN apt-get update && \
     apt-get install -y salt-minion && \
-    salt-pip install pygit2==1.14.1
+    salt-pip install pygit2==1.14.1 pynacl==1.5.0
 
 # Add CMD that makes the container busy wait forever \
 CMD [ "tail", "-f", "/dev/null" ]

@@ -1,9 +1,12 @@
 from pathlib import Path
 
 import pytest
+from testinfra.host import Host
+from testinfra.modules.file import File
 
 from testcontainers_salt import SaltContainer
 import testinfra
+
 
 @pytest.fixture(scope="module")
 def container_fixture():
@@ -13,7 +16,7 @@ def container_fixture():
     pillar_root = salt_files_dir / "pillar"
 
     container = (
-        SaltContainer(salt_version="3007")
+        SaltContainer()
         .with_file_root(state_root / "base", "base", environ="__env__")
         .with_file_root(state_root / "__env__", "__env__", environ="__env__")
         .with_file_root(state_root / "base", "base", environ="base")
@@ -44,17 +47,21 @@ def container_fixture():
 
     yield container
     container.stop()
+
+
 @pytest.fixture(scope="module")
-def host(container_fixture: SaltContainer):
+def host(container_fixture: SaltContainer) -> Host:
     conatiner_id = container_fixture.get_wrapped_container().id
     return testinfra.get_host(f"docker://{conatiner_id}")
+
 
 def test_container(container_fixture):
     result = container_fixture.exec(["cat", "/etc/salt/minion"])
     print(result)
 
-def test_passwd(host):
-    passwd = host.file("/etc/passwd")
+
+def test_passwd(host: Host):
+    passwd: File = host.file("/etc/passwd")
     assert passwd.contains("root")
     assert passwd.user == "root"
     assert passwd.group == "root"

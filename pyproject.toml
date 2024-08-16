@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "testcontainers_salt"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["Nikolas Papaioannou <nikolas@hacky.software>"]
 readme = "README.md"
