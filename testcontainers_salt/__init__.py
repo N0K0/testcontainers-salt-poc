@@ -6,7 +6,7 @@ from pathlib import Path
 
 import importlib.resources as resources
 
-from typing_extensions import Self
+from typing_extensions import Literal, Self
 
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.image import DockerImage
@@ -29,6 +29,11 @@ yaml.add_representer(defaultdict, represent_dict_with_skip_none)
 
 # Make "env" a type alias for str
 env = str
+
+# Define salt_log_level as a literal type with possible log level values
+salt_log_level = Literal[
+    "garbage", "trace", "debug", "info", "warning", "error", "critical"
+]
 
 
 class SaltImageDocker(DockerImage):
@@ -55,6 +60,7 @@ SaltImage = SaltImageDocker
 class SaltContainer(DockerContainer):
     def __init__(self, image=None, **kwargs):
         self._id = None
+        self._saltenv = None
 
         self.config_dir = Path("/etc/salt")
         self.base_dir_state = Path("/srv/salt")
@@ -98,6 +104,7 @@ class SaltContainer(DockerContainer):
         config_file_path = config_dir / "minion"
 
         self.config_file["id"] = self._id
+        self.config_file["saltenv"] = self._saltenv
         self.config_file["state_top"] = self.state_top
         self.config_file["state_top_saltenv"] = self.state_top_saltenv
         self.config_file["file_roots"] = self.file_roots
@@ -105,7 +112,8 @@ class SaltContainer(DockerContainer):
         self.config_file["file_server_backends"] = self.file_server_backends
         self.config_file["gitfs_remotes"] = self.gitfs_remotes
         self.config_file["state_verbose"] = self.state_verbose
-
+        self.config_file["log_level"]: salt_log_level = "debug"
+        self.config_file["log_level_logfile"]: salt_log_level = "debug"
         self._complete_config = self.config_file | self.extra_config_data
 
         with open(config_file_path, "w") as f:
@@ -150,6 +158,10 @@ class SaltContainer(DockerContainer):
 
     def with_id(self, id: str) -> Self:
         self._id = id
+        return self
+
+    def with_saltenv(self, saltenv: str) -> Self:
+        self._saltenv = saltenv
         return self
 
     def with_file_root(
@@ -212,12 +224,21 @@ class SaltContainer(DockerContainer):
         self.extra_config_data = config
         return self
 
-    def get_salt_call_args(self, command: str = "state.apply") -> list[str]:
+    def with_log_level(self, log_level: salt_log_level) -> Self:
+        self.log_level = log_level
+
+    def with_log_level_logfile(self, log_level: salt_log_level) -> Self:
+        self.log_level_logfile = log_level
+
+    def get_salt_call_args(
+        self, command: str = "state.apply", output: str = "yaml"
+    ) -> list[str]:
         return [
             "salt-call",
             "--local",
             f"--config-dir={self.config_dir}",
             f"--id={self._id}",
+            f"--out={output}",
             f"{command}",
         ]
 

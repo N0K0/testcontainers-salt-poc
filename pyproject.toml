@@ -10,13 +10,12 @@ include = ["resources"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-testcontainers = "^4.7.2"
+testcontainers = "^4.10.0"
 pyyaml = "^6.0.1"
-black = "^24.8.0"
-pytest-testinfra = "^10.1.1"
+pytest-testinfra = "^10.2.2"
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.8.0"
+black = "^25.1.0"
 
 [build-system]
 requires = ["poetry-core"]
